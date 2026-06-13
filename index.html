@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Little A Level Survival Journal</title>
+  <style>
+    :root {
+      --paper: #fffaf0;
+      --paper-deep: #f7edda;
+      --ink: #3f3a34;
+      --muted: #7a7168;
+      --blue: #cfe4ef;
+      --green: #dcebd8;
+      --yellow: #fff1b8;
+      --pink: #f3d6d4;
+      --tape: rgba(255, 237, 170, 0.72);
+      --shadow: rgba(83, 66, 49, 0.18);
+      --line: rgba(90, 79, 68, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Georgia", "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(255,255,255,0.55), transparent 24%),
+        radial-gradient(circle at 82% 14%, rgba(255,241,184,0.45), transparent 26%),
+        radial-gradient(circle at 62% 86%, rgba(207,228,239,0.38), transparent 28%),
+        linear-gradient(135deg, #f6efe2 0%, #ecf4ee 55%, #f7efdf 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      overflow-x: hidden;
+    }
+
+    .app {
+      width: min(980px, 100%);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 18px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .progress {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(97, 84, 68, 0.14);
+      overflow: hidden;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 20%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #dcebd8, #cfe4ef, #fff1b8);
+      transition: width 500ms ease;
+    }
+
+    .journal-wrap {
+      perspective: 1600px;
+      position: relative;
+    }
+
+    .journal {
+      position: relative;
+      width: 100%;
+      min-height: 630px;
+      border-radius: 28px;
+      padding: 18px;
+      background:
+        linear-gradient(90deg, rgba(124, 105, 83, 0.06), transparent 4%, transparent 96%, rgba(124, 105, 83, 0.06)),
+        #f2e5cf;
+      box-shadow: 0 26px 65px rgba(70, 51, 34, 0.24);
+      transform-style: preserve-3d;
+    }
+
+    .rings {
+      position: absolute;
+      top: 58px;
+      bottom: 58px;
+      left: 50%;
+      width: 24px;
+      transform: translateX(-50%);
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+    }
+
+    .rings span {
+      height: 24px;
+      border: 3px solid rgba(99, 89, 77, 0.35);
+      border-left-color: rgba(99, 89, 77, 0.12);
+      border-radius: 50%;
+      background: rgba(255,255,255,0.36);
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.35);
+    }
+
+    .page {
+      position: absolute;
+      inset: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      padding: 34px;
+      border-radius: 22px;
+      background:
+        linear-gradient(to bottom, transparent 0 31px, var(--line) 32px, transparent 33px),
+        radial-gradient(circle at 18% 18%, rgba(255,255,255,0.72), transparent 26%),
+        var(--paper);
+      background-size: auto, auto, 100% 100%;
+      box-shadow: inset 0 0 0 1px rgba(99, 77, 55, 0.12), 0 14px 30px var(--shadow);
+      opacity: 0;
+      transform: rotateY(8deg) translateX(22px) scale(0.985);
+      transform-origin: left center;
+      pointer-events: none;
+      transition: opacity 420ms ease, transform 620ms cubic-bezier(.18,.75,.2,1);
+      overflow: hidden;
+    }
+
+    .page.active {
+      opacity: 1;
+      transform: rotateY(0deg) translateX(0) scale(1);
+      pointer-events: auto;
+      z-index: 3;
+    }
+
+    .page.leaving-next {
+      transform: rotateY(-28deg) translateX(-36px) scale(0.975);
+      opacity: 0;
+    }
+
+    .page.leaving-prev {
+      transform: rotateY(28deg) translateX(36px) scale(0.975);
+      opacity: 0;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(rgba(95, 76, 52, 0.075) 0.7px, transparent 0.8px);
+      background-size: 13px 13px;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .page::after {
+      content: "";
+      position: absolute;
+      top: 20px;
+      left: 44%;
+      width: 135px;
+      height: 34px;
+      background: var(--tape);
+      transform: rotate(-2deg);
+      border-left: 1px dashed rgba(125, 101, 70, 0.18);
+      border-right: 1px dashed rgba(125, 101, 70, 0.18);
+      filter: drop-shadow(0 3px 3px rgba(85,70,49,0.1));
+      opacity: 0.82;
+      pointer-events: none;
+    }
+
+    .spread {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+    }
+
+    .left-page {
+      padding-right: 20px;
+      border-right: 1px dashed rgba(100, 84, 69, 0.22);
+    }
+
+    .right-page {
+      padding-left: 14px;
+    }
+
+    h1, h2, h3, p {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: clamp(38px, 6vw, 76px);
+      line-height: 0.92;
+      letter-spacing: -0.05em;
+      margin-bottom: 18px;
+    }
+
+    h2 {
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1;
+      letter-spacing: -0.035em;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      font-size: 17px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.65;
+      color: #4b453f;
+    }
+
+    .placeholder {
+      color: rgba(63, 58, 52, 0.52);
+      font-style: italic;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.58);
+      border: 1px solid rgba(92,77,59,0.12);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      color: #5c544c;
+      margin: 3px;
+      box-shadow: 0 4px 10px rgba(80,64,45,0.06);
+    }
+
+    .sticker {
+      display: inline-block;
+      padding: 12px 15px;
+      border-radius: 17px;
+      background: var(--yellow);
+      box-shadow: 0 8px 17px rgba(89, 69, 42, 0.12);
+      transform: rotate(-2.5deg);
+      font-family: "Trebuchet MS", system-ui, sans-serif;
+      margin: 10px 8px 12px 0;
+      border: 1px solid rgba(120, 96, 61, 0.1);
+    }
+
+    .sticker.blue { background: var(--blue); transform: rotate(2deg); }
+    .sticker.green { background: var(--green); transform: rotate(-1.2deg); }
+    .sticker.pink { background: var(--pink); transform: rotate(1.5deg); }
+
+    .note-card {
+      background: rgba(255,255,255,0.48);
+      border: 1px solid rgba(92, 77, 59, 0.13);
+      border-radius: 20px;
+      padding: 20px;
+      margin: 16px 0;
+      box-shadow: 0 11px 22px rgba(73, 58, 40, 0.08);
+      position: relative;
+    }
+
+    .note-card::before {
+      content: "";
+      position: absolute;
+      top: -12px;
+      left: 28px;
+      width: 72px;
+      height: 23px;
+      background: rgba(243,214,212,0.72);
+      transform: rotate(-3deg);
+      border-radius: 2px;
+    }
+
+    .polaroid {
+      background: #fffdf8;
+      border-radius: 8px;
+      padding: 12px 12px 35px;
+      box-shadow: 0 15px 25px rgba(72, 57, 39, 0.16);
+      transform: rotate(2.5deg);
+      margin-top: 18px;
+      max-width: 260px;
+    }
+
+    .polaroid .image-space {
+      aspect-ratio: 4/3;
+      border-radius: 5px;
+      background:
+        linear-gradient(135deg, rgba(207,228,239,0.85), rgba(255,241,184,0.68)),
+        repeating-linear-gradient(45deg, transparent 0 10px, rgba(255,255,255,0.35) 10px 20px);
+      display: grid;
+      place-items: center;
+      color: rgba(63,58,52,0.5);
+      font-family: system-ui, sans-serif;
+      text-align: center;
+      padding: 15px;
+    }
+
+    .caption {
+      margin-top: 12px;
+      text-align: center;
+      font-family: "Trebuchet MS", system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .doodle {
+      position: absolute;
+      color: rgba(71, 64, 56, 0.35);
+      font-family: "Trebuchet MS", system-ui, sans-serif;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .d1 { right: 52px; top: 76px; font-size: 42px; transform: rotate(12deg); }
+    .d2 { left: 58px; bottom: 48px; font-size: 38px; transform: rotate(-10deg); }
+    .d3 { right: 70px; bottom: 74px; font-size: 24px; transform: rotate(7deg); }
+
+    .formula-box {
+      border-radius: 18px;
+      border: 1px dashed rgba(88, 72, 55, 0.26);
+      padding: 16px;
+      background: rgba(255,255,255,0.36);
+      font-family: "Courier New", monospace;
+      font-size: 16px;
+      line-height: 1.55;
+      color: rgba(63,58,52,0.72);
+      margin-top: 16px;
+    }
+
+    .tabs {
+      position: absolute;
+      right: -14px;
+      top: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .tab {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      border: 0;
+      border-radius: 0 12px 12px 0;
+      padding: 12px 8px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #5b524b;
+      cursor: pointer;
+      box-shadow: 5px 6px 14px rgba(70, 51, 34, 0.12);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .tab:hover {
+      transform: translateX(3px);
+      filter: brightness(1.03);
+    }
+
+    .tab:nth-child(1) { background: var(--yellow); }
+    .tab:nth-child(2) { background: var(--blue); }
+    .tab:nth-child(3) { background: var(--green); }
+    .tab:nth-child(4) { background: var(--pink); }
+    .tab:nth-child(5) { background: #e8def8; }
+
+    .controls {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .btn {
+      border: 1px solid rgba(77, 64, 50, 0.16);
+      background: rgba(255,255,255,0.58);
+      color: #4e463e;
+      border-radius: 999px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-size: 14px;
+      box-shadow: 0 9px 18px rgba(70, 51, 34, 0.09);
+      transition: transform 180ms ease, background 180ms ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.78);
+    }
+
+    .btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .page-counter {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .mini-list {
+      padding-left: 20px;
+      font-size: 16px;
+      line-height: 1.65;
+      color: rgba(63,58,52,0.76);
+    }
+
+    .cover-mark {
+      width: 128px;
+      height: 128px;
+      border-radius: 35px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.75), transparent 35%),
+        linear-gradient(135deg, var(--blue), var(--green));
+      box-shadow: 0 15px 28px rgba(83,66,49,0.14);
+      font-size: 42px;
+      transform: rotate(-4deg);
+      margin: 14px 0 22px;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 14px;
+        align-items: flex-start;
+      }
+
+      .journal {
+        min-height: 880px;
+        padding: 12px;
+      }
+
+      .page {
+        inset: 12px;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 28px 22px;
+        overflow-y: auto;
+      }
+
+      .left-page {
+        border-right: 0;
+        border-bottom: 1px dashed rgba(100, 84, 69, 0.22);
+        padding-right: 0;
+        padding-bottom: 10px;
+      }
+
+      .right-page {
+        padding-left: 0;
+      }
+
+      .rings {
+        display: none;
+      }
+
+      .tabs {
+        display: none;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      p {
+        font-size: 16px;
+      }
+
+      .topbar {
+        font-size: 12px;
+      }
+    }
+
+    /* Internal scrolling fix: each scrapbook page can scroll inside the paper */
+    .page {
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(122, 113, 104, 0.45) rgba(255,255,255,0.18);
+    }
+
+    .page::-webkit-scrollbar {
+      width: 9px;
+    }
+
+    .page::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.18);
+      border-radius: 999px;
+      margin: 18px 0;
+    }
+
+    .page::-webkit-scrollbar-thumb {
+      background: rgba(122, 113, 104, 0.38);
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,0.35);
+    }
+
+    .page::-webkit-scrollbar-thumb:hover {
+      background: rgba(122, 113, 104, 0.58);
+    }
+
+    .journal {
+      height: min(72vh, 680px);
+      min-height: 560px;
+    }
+
+    .note-card {
+      overflow-wrap: anywhere;
+    }
+
+    .spread {
+      align-self: start;
+    }
+
+    @media (max-width: 760px) {
+      .journal {
+        height: calc(100vh - 145px);
+        min-height: 620px;
+      }
+
+      .page {
+        overflow-y: auto;
+        padding-bottom: 60px;
+      }
+    }
+
+    @media (max-height: 720px) {
+      .journal {
+        height: calc(100vh - 138px);
+        min-height: 500px;
+      }
+
+      .page {
+        padding-top: 24px;
+        padding-bottom: 70px;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <div class="topbar">
+      <span>A Level Survival Journal</span>
+      <div class="progress" aria-label="Page progress"><span id="progressBar"></span></div>
+      <span id="topPageLabel">Page 1 / 5 · scroll inside page if needed</span>
+    </div>
+
+    <section class="journal-wrap">
+      <div class="journal" id="journal">
+        <div class="rings" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <nav class="tabs" aria-label="Jump to page">
+          <button class="tab" data-target="0">Cover</button>
+          <button class="tab" data-target="1">Nathan</button>
+          <button class="tab" data-target="2">David</button>
+          <button class="tab" data-target="3">Memories</button>
+          <button class="tab" data-target="4">Final</button>
+        </nav>
+
+        <article class="page active">
+          <div class="spread left-page">
+            <div class="cover-mark">✦</div>
+            <h1>A Little A Level Survival Journal</h1>
+            <p>This little journal is my way of saying thank you — a small scrapbook for the people who helped me survive A Levels.</p>
+            <div>
+              <span class="tag">Physics</span>
+              <span class="tag">Further Maths</span>
+              <span class="tag">Exam season survived</span>
+            </div>
+          </div>
+          <div class="spread right-page">
+            <h3>For Nathan & David</h3>
+            <div class="note-card">
+              <p>Since I cannot give you a physical card in person, I wanted to make something small, personal, and a little more memorable. Over the past year, you have helped me through one of the most intense parts of my A Level journey.</p>
+            </div>
+            <div class="sticker green">from Nico</div>
+            <div class="sticker blue">2025–2026</div>
+            <div class="doodle d1">☆</div>
+            <div class="doodle d2">∿</div>
+          </div>
+        </article>
+
+        <article class="page">
+          <div class="spread left-page">
+            <h2>Nathan’s Physics Page</h2>
+            <p>Nathan, thank you for helping me see Physics in a much clearer way. One of the most important things you taught me was how to use units properly — not just to check an answer, but to understand what a formula is really saying.</p><p>I used to see units as something I had to add at the end. Now I understand that they can guide the whole problem.</p>
+            <div class="formula-box">
+              F = ma<br>
+              V = W / Q<br>
+              panic(t) → manageable
+            </div>
+          </div>
+          <div class="spread right-page">
+            <h3>Possible sections</h3>
+            <ul class="mini-list">
+              <li>Using units to check and derive formulas</li>
+              <li>Reading Physics questions more carefully</li>
+              <li>Noticing key words and avoiding traps</li>
+              <li>Improving academic English through precise explanations</li>
+            </ul>
+            <div class="polaroid">
+              <div class="image-space">units → formula → meaning</div>
+              <div class="caption">Physics became less like a wall of formulas</div>
+            </div>
+            <div class="note-card">
+              <p>You helped me connect the wording of a question to the correct physical model, and made Physics feel more like a way of thinking.</p>
+            </div>
+            <div class="doodle d1">⚡</div>
+            <div class="doodle d3">orbit?</div>
+          </div>
+        </article>
+
+        <article class="page">
+          <div class="spread left-page">
+            <h2>David’s Further Maths Page</h2>
+            <p>David, thank you for helping me become much more confident with Further Maths. One of the biggest changes is that I have become more sensitive to algebra, especially in integration and differentiation.</p><p>I used to get lost in the symbols very easily, but your explanations helped me pay closer attention to structure, patterns, and the small transformations inside a question.</p>
+            <div class="formula-box">
+              abstraction + structure<br>
+              ⇒ calmer problem-solving<br>
+              simplex table ≠ haunted spreadsheet
+            </div>
+          </div>
+          <div class="spread right-page">
+            <h3>Possible sections</h3>
+            <ul class="mini-list">
+              <li>Becoming more sensitive to algebraic structure</li>
+              <li>Understanding integration and differentiation more deeply</li>
+              <li>Breaking complicated questions into smaller steps</li>
+              <li>Staying calmer when a problem looks impossible</li>
+            </ul>
+            <div class="polaroid">
+              <div class="image-space">structure → method → confidence</div>
+              <div class="caption">Abstract questions became more organised</div>
+            </div>
+            <div class="note-card">
+              <p>You helped me understand that Maths is not just memorised methods, but recognising the shape of a problem and trusting the logic step by step.</p>
+            </div>
+            <div class="doodle d1">∫</div>
+            <div class="doodle d3">x → ∞</div>
+          </div>
+        </article>
+
+        <article class="page">
+          <div class="spread left-page">
+            <h2>Things I’ll Remember</h2>
+            <div class="note-card">
+              <p>Confusion does not always mean failure. Sometimes it is just the stage before understanding.</p>
+            </div>
+            <div class="note-card">
+              <p>A difficult question becomes less frightening when I know how to break it into smaller parts.</p>
+            </div>
+          </div>
+          <div class="spread right-page">
+            <h3>Mini scrapbook</h3>
+            <div class="sticker">past papers</div>
+            <div class="sticker blue">flashcards</div>
+            <div class="sticker pink">panic → clarity</div>
+            <div class="sticker green">survived!</div>
+            <p>Units, wording, structure, and logic are not small details — they are often the key to the whole problem.</p>
+            <div class="doodle d2">♡</div>
+          </div>
+        </article>
+
+        <article class="page">
+          <div class="spread left-page">
+            <h2>Final Page</h2>
+            <p>Thank you both for your patience, clarity, and support throughout this year. I may not remember every single question we went through, but I will remember the way you helped me become calmer, clearer, and more confident in my own thinking.</p>
+            <div class="formula-box">
+              support + patience + explanations<br>
+              = a year I could get through
+            </div>
+          </div>
+          <div class="spread right-page">
+            <h3>Signature</h3>
+            <div class="note-card">
+              <p>With gratitude,<br>Nico</p>
+            </div>
+            <div class="cover-mark">✓</div>
+            <div class="doodle d1">✧</div>
+            <div class="doodle d3">thank you</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="controls">
+      <button class="btn" id="prevBtn">← Previous page</button>
+      <span class="page-counter" id="pageCounter">Cover</span>
+      <button class="btn" id="nextBtn">Next page →</button>
+    </div>
+  </main>
+
+  <script>
+    const pages = Array.from(document.querySelectorAll(".page"));
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const pageCounter = document.getElementById("pageCounter");
+    const topPageLabel = document.getElementById("topPageLabel");
+    const progressBar = document.getElementById("progressBar");
+    const tabs = Array.from(document.querySelectorAll(".tab"));
+
+    const labels = ["Cover", "Nathan", "David", "Memories", "Final"];
+    let currentPage = 0;
+
+    function showPage(nextPage) {
+      if (nextPage === currentPage || nextPage < 0 || nextPage >= pages.length) return;
+
+      const direction = nextPage > currentPage ? "next" : "prev";
+      pages[currentPage].classList.remove("active");
+      pages[currentPage].classList.add(direction === "next" ? "leaving-next" : "leaving-prev");
+
+      const oldPage = currentPage;
+      currentPage = nextPage;
+      pages[currentPage].classList.remove("leaving-next", "leaving-prev");
+      pages[currentPage].classList.add("active");
+
+      setTimeout(() => {
+        pages[oldPage].classList.remove("leaving-next", "leaving-prev");
+      }, 650);
+
+      updateControls();
+    }
+
+    function updateControls() {
+      prevBtn.disabled = currentPage === 0;
+      nextBtn.disabled = currentPage === pages.length - 1;
+      pageCounter.textContent = labels[currentPage];
+      topPageLabel.textContent = `Page ${currentPage + 1} / ${pages.length} · scroll inside page if needed`;
+      progressBar.style.width = `${((currentPage + 1) / pages.length) * 100}%`;
+    }
+
+    prevBtn.addEventListener("click", () => showPage(currentPage - 1));
+    nextBtn.addEventListener("click", () => showPage(currentPage + 1));
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        showPage(Number(tab.dataset.target));
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight") showPage(currentPage + 1);
+      if (event.key === "ArrowLeft") showPage(currentPage - 1);
+    });
+
+    updateControls();
+  </script>
+</body>
+</html>
